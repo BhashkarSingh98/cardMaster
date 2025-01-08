@@ -8,7 +8,7 @@ const showErrors = ref(false)
 const form = ref({
   name: '',
   bankName: 'HDFC',
-  cardType: '',
+  cardType: '' as 'Credit' | 'Debit',
   cardNumber: '',
   validTill: '',
   cvv: '',
@@ -71,24 +71,52 @@ const submit = () => {
     return
   }
 
+  // Validate card type before submission
+  if (form.value.cardType !== 'Credit' && form.value.cardType !== 'Debit') {
+    return
+  }
+
+  // Check for existing default card
   if (form.value.isDefault) {
     const hasDefault = form.value.cardType === 'Credit' 
       ? cardStore.defaultCreditCard 
       : cardStore.defaultDebitCard
     
     if (hasDefault) {
-      // Show error toast
+      // You can add a toast notification here if you want
       return
     }
   }
 
-  cardStore.addCard({
-    ...form.value,
-    isLocked: false,
-    isArchived: false
-  })
-  dialog.value = false
-  showErrors.value = false // Reset error state when form is successfully submitted
+  try {
+    // Add the card to store
+    cardStore.addCard({
+      name: form.value.name,
+      bankName: form.value.bankName,
+      cardType: form.value.cardType,
+      cardNumber: form.value.cardNumber,
+      validTill: form.value.validTill,
+      cvv: form.value.cvv,
+      isDefault: form.value.isDefault,
+      isGPay: form.value.isGPay
+    })
+
+    // Reset form
+    form.value = {
+      name: '',
+      bankName: 'HDFC',
+      cardType: '' as 'Credit' | 'Debit',
+      cardNumber: '',
+      validTill: '',
+      cvv: '',
+      isDefault: false,
+      isGPay: false
+    }
+    dialog.value = false
+    showErrors.value = false
+  } catch (error) {
+    console.error('Error adding card:', error)
+  }
 }
 
 const dialog = ref(false)
@@ -156,6 +184,7 @@ watch(dialog, (newValue) => {
               density="compact"
               :error-messages="errors.cardType"
               class=""
+              @change="(val) => console.log('Selected card type:', val)"
             ></v-select>
 
             <!-- Card Number -->
